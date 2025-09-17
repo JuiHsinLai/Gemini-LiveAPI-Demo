@@ -6,16 +6,8 @@ window.addEventListener("load", (event) => {
 });
 
 const PROXY_URL = "ws://localhost:8080";
-// const PROXY_URL = "/ws";
 const PROJECT_ID = "visionai-testing-stable";
-// const MODEL = "gemini-2.0-flash-exp";
-// const MODEL = "gemini-2.0-flash-live-preview-04-09";
-// const MODEL = "gemini-2.5-flash-preview-native-audio";
-// const MODEL = "gemini-live-2.5-flash-preview-native-audio";
 const MODEL = "gemini-live-2.5-flash-preview-native-audio-09-09"
-// const MODEL = "gemini-2.5-flash-preview-native-audio-dialog";
-// const API_HOST = "us-central1-aiplatform.googleapis.com";
-// const API_HOST = "us-central1-autopush-aiplatform.sandbox.googleapis.com";
 const API_HOST = "us-central1-autopush-aiplatform.sandbox.googleapis.com";
 const accessTokenInput = document.getElementById("token");
 const projectInput = document.getElementById("project");
@@ -124,9 +116,9 @@ function connectBtnClick() {
     geminiLiveApi.setTranscript(inputTranscript.checked, outputTranscript.checked);
     geminiLiveApi.setResumption(enableResumption.checked, resumptionHandle.value);
     geminiLiveApi.setVoice(voiceName.value, voiceLocale.value);
-    geminiLiveApi.setVad(disableInterruption.checked, 
+    geminiLiveApi.setVad(disableInterruption.checked,
         disableDetection.checked,
-        startSensitivity.value, 
+        startSensitivity.value,
         endSensitivity.value
     );
     geminiLiveApi.setCustomVoice(customVoiceBase64);
@@ -389,15 +381,15 @@ const voiceDropdown = document.getElementById('voice-dropdown');
 createVoiceBtn.addEventListener('click', openModal);
 closeModalBtn.addEventListener('click', closeModal);
 window.addEventListener('click', (event) => {
-  if (event.target === modal) {
-    closeModal();
-  }
+    if (event.target === modal) {
+        closeModal();
+    }
 });
 recordButton.addEventListener('click', handleRecordClick);
 
 // --- Functions ---
 function closeModal() {
-  modal.style.display = 'none';
+    modal.style.display = 'none';
 }
 
 // --- State for Recording ---
@@ -407,169 +399,169 @@ let isRecording = false;
 let recordingStartTime;
 
 async function handleRecordClick() {
-  const voiceName = newVoiceNameInput.value.trim();
-  if (voiceName === '') {
-    alert('Please enter a name for the reference voice.');
-    newVoiceNameInput.focus();
-    return;
-  }
-
-  if (isRecording) {
-    // Stop recording
-    const duration = (new Date() - recordingStartTime) / 1000;
-    if (duration < 10) {
-        alert('A recording of at least 10 seconds is required.');
-        // Don't stop, let user continue recording
+    const voiceName = newVoiceNameInput.value.trim();
+    if (voiceName === '') {
+        alert('Please enter a name for the reference voice.');
+        newVoiceNameInput.focus();
         return;
     }
 
-    mediaRecorder.stop();
-    recordButton.disabled = true;
-    recordStatus.textContent = 'Processing...';
-    processingSpinner.style.display = 'block';
-    recordButton.innerHTML = 'Processing...';
-    isRecording = false;
-  } else {
-    // Start recording
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Try to record as WAV, but fall back to browser default if not supported
-      const mimeType = MediaRecorder.isTypeSupported('audio/wav') ? 'audio/wav' : 'audio/webm';
-      mediaRecorder = new MediaRecorder(stream, { mimeType });
+    if (isRecording) {
+        // Stop recording
+        const duration = (new Date() - recordingStartTime) / 1000;
+        if (duration < 10) {
+            alert('A recording of at least 10 seconds is required.');
+            // Don't stop, let user continue recording
+            return;
+        }
 
-      mediaRecorder.ondataavailable = event => {
-        audioChunks.push(event.data);
-      };
+        mediaRecorder.stop();
+        recordButton.disabled = true;
+        recordStatus.textContent = 'Processing...';
+        processingSpinner.style.display = 'block';
+        recordButton.innerHTML = 'Processing...';
+        isRecording = false;
+    } else {
+        // Start recording
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            // Try to record as WAV, but fall back to browser default if not supported
+            const mimeType = MediaRecorder.isTypeSupported('audio/wav') ? 'audio/wav' : 'audio/webm';
+            mediaRecorder = new MediaRecorder(stream, { mimeType });
 
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunks, { type: mimeType });
-        console.log("Conversion start")
-        // Resample the audio to 16kHz
-        const targetSampleRate = 16000;
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const decodedBuffer = await audioContext.decodeAudioData(await audioBlob.arrayBuffer());
-        const offlineContext = new OfflineAudioContext(decodedBuffer.numberOfChannels, decodedBuffer.duration * targetSampleRate, targetSampleRate);
-        const source = offlineContext.createBufferSource();
-        source.buffer = decodedBuffer;
-        source.connect(offlineContext.destination);
-        source.start();
-        const resampledBuffer = await offlineContext.startRendering();
+            mediaRecorder.ondataavailable = event => {
+                audioChunks.push(event.data);
+            };
 
-        // Convert the resampled buffer to a WAV blob
-        const wavBlob = bufferToWave(resampledBuffer);
-        console.log("Conversion done")
-        // downloadBlob(wavBlob, 'resampled_audio_16k.wav');
-        // console.log("Downloading the audio...")
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: mimeType });
+                console.log("Conversion start")
+                // Resample the audio to 16kHz
+                const targetSampleRate = 16000;
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const decodedBuffer = await audioContext.decodeAudioData(await audioBlob.arrayBuffer());
+                const offlineContext = new OfflineAudioContext(decodedBuffer.numberOfChannels, decodedBuffer.duration * targetSampleRate, targetSampleRate);
+                const source = offlineContext.createBufferSource();
+                source.buffer = decodedBuffer;
+                source.connect(offlineContext.destination);
+                source.start();
+                const resampledBuffer = await offlineContext.startRendering();
 
-        const reader = new FileReader();
-        reader.readAsDataURL(wavBlob);
-        reader.onloadend = () => {
-          const base64String = reader.result.split(',')[1];
-          
-          customVoiceBase64 = base64String;
+                // Convert the resampled buffer to a WAV blob
+                const wavBlob = bufferToWave(resampledBuffer);
+                console.log("Conversion done")
+                // downloadBlob(wavBlob, 'resampled_audio_16k.wav');
+                // console.log("Downloading the audio...")
 
-          const newOption = document.createElement('option');
-          const optionValue = voiceName.toLowerCase().replace(/\s/g, '-');
-          newOption.value = optionValue;
-          newOption.textContent = voiceName;
-          newOption.selected = true;
-          voiceDropdown.appendChild(newOption);
+                const reader = new FileReader();
+                reader.readAsDataURL(wavBlob);
+                reader.onloadend = () => {
+                    const base64String = reader.result.split(',')[1];
 
-          alert(`New branded voice "${voiceName}" has been created and selected!`);
-          closeModal();
-          audioChunks = [];
-        };
-      };
+                    customVoiceBase64 = base64String;
 
-      mediaRecorder.start();
-      recordingStartTime = new Date();
-      isRecording = true;
-      recordButton.innerHTML = '<span class="material-icons">stop</span> Stop Recording';
-      recordStatus.textContent = 'Recording... (10s minimum)';
+                    const newOption = document.createElement('option');
+                    const optionValue = voiceName.toLowerCase().replace(/\s/g, '-');
+                    newOption.value = optionValue;
+                    newOption.textContent = voiceName;
+                    newOption.selected = true;
+                    voiceDropdown.appendChild(newOption);
 
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
-      alert('Could not access microphone. Please check permissions.');
+                    alert(`New branded voice "${voiceName}" has been created and selected!`);
+                    closeModal();
+                    audioChunks = [];
+                };
+            };
+
+            mediaRecorder.start();
+            recordingStartTime = new Date();
+            isRecording = true;
+            recordButton.innerHTML = '<span class="material-icons">stop</span> Stop Recording';
+            recordStatus.textContent = 'Recording... (10s minimum)';
+
+        } catch (error) {
+            console.error('Error accessing microphone:', error);
+            alert('Could not access microphone. Please check permissions.');
+        }
     }
-  }
 }
 
 function bufferToWave(abuffer) {
-  const numOfChan = abuffer.numberOfChannels;
-  const length = abuffer.length * numOfChan * 2 + 44;
-  const buffer = new ArrayBuffer(length);
-  const view = new DataView(buffer);
-  const channels = [];
-  let i;
-  let sample;
-  let offset = 0;
-  let pos = 0;
+    const numOfChan = abuffer.numberOfChannels;
+    const length = abuffer.length * numOfChan * 2 + 44;
+    const buffer = new ArrayBuffer(length);
+    const view = new DataView(buffer);
+    const channels = [];
+    let i;
+    let sample;
+    let offset = 0;
+    let pos = 0;
 
-  // write WAVE header
-  setUint32(0x46464952); // "RIFF"
-  setUint32(length - 8); // file length - 8
-  setUint32(0x45564157); // "WAVE"
+    // write WAVE header
+    setUint32(0x46464952); // "RIFF"
+    setUint32(length - 8); // file length - 8
+    setUint32(0x45564157); // "WAVE"
 
-  setUint32(0x20746d66); // "fmt " chunk
-  setUint32(16); // length = 16
-  setUint16(1); // PCM (uncompressed)
-  setUint16(numOfChan);
-  setUint32(abuffer.sampleRate);
-  setUint32(abuffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
-  setUint16(numOfChan * 2); // block-align
-  setUint16(16); // 16-bit (hardcoded in this demo)
+    setUint32(0x20746d66); // "fmt " chunk
+    setUint32(16); // length = 16
+    setUint16(1); // PCM (uncompressed)
+    setUint16(numOfChan);
+    setUint32(abuffer.sampleRate);
+    setUint32(abuffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
+    setUint16(numOfChan * 2); // block-align
+    setUint16(16); // 16-bit (hardcoded in this demo)
 
-  setUint32(0x61746164); // "data" - chunk
-  setUint32(length - pos - 4); // chunk length
+    setUint32(0x61746164); // "data" - chunk
+    setUint32(length - pos - 4); // chunk length
 
-  // write interleaved data
-  for (i = 0; i < abuffer.numberOfChannels; i++) {
-    channels.push(abuffer.getChannelData(i));
-  }
-
-  while (pos < length) {
-    for (i = 0; i < numOfChan; i++) {
-      // interleave channels
-      sample = Math.max(-1, Math.min(1, channels[i][offset])); // clamp
-      sample = (sample < 0 ? sample * 32768 : sample * 32767) | 0;
-      view.setInt16(pos, sample, true); // write 16-bit sample
-      pos += 2;
+    // write interleaved data
+    for (i = 0; i < abuffer.numberOfChannels; i++) {
+        channels.push(abuffer.getChannelData(i));
     }
-    offset++; // next source sample
-  }
 
-  return new Blob([view], { type: "audio/wav" });
+    while (pos < length) {
+        for (i = 0; i < numOfChan; i++) {
+            // interleave channels
+            sample = Math.max(-1, Math.min(1, channels[i][offset])); // clamp
+            sample = (sample < 0 ? sample * 32768 : sample * 32767) | 0;
+            view.setInt16(pos, sample, true); // write 16-bit sample
+            pos += 2;
+        }
+        offset++; // next source sample
+    }
 
-  function setUint16(data) {
-    view.setUint16(pos, data, true);
-    pos += 2;
-  }
+    return new Blob([view], { type: "audio/wav" });
 
-  function setUint32(data) {
-    view.setUint32(pos, data, true);
-    pos += 4;
-  }
+    function setUint16(data) {
+        view.setUint16(pos, data, true);
+        pos += 2;
+    }
+
+    function setUint32(data) {
+        view.setUint32(pos, data, true);
+        pos += 4;
+    }
 }
 
 function openModal() {
-  modal.style.display = 'flex';
-  newVoiceNameInput.value = '';
-  recordButton.disabled = false;
-  recordButton.innerHTML = '<span class="material-icons">mic</span> Record reference voice';
-  recordStatus.textContent = '';
-  processingSpinner.style.display = 'none';
-  isRecording = false;
-  audioChunks = [];
+    modal.style.display = 'flex';
+    newVoiceNameInput.value = '';
+    recordButton.disabled = false;
+    recordButton.innerHTML = '<span class="material-icons">mic</span> Record reference voice';
+    recordStatus.textContent = '';
+    processingSpinner.style.display = 'none';
+    isRecording = false;
+    audioChunks = [];
 }
 
 function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.style.display = 'none';
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  window.URL.revokeObjectURL(url);
-  document.body.removeChild(a);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
 }
